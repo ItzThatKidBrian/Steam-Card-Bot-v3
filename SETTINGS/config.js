@@ -35,15 +35,14 @@ module.exports = {
             "Shadow Case Key",
             "Operation Wildfire Case Key",
             "Falchion Case Key",
-			"Spectrum Case Key",
+	    "Spectrum Case Key",
             "Operation Breakout Case Key",
             "Chroma 3 Case Key",
             "CS:GO Case Key",
             "Operation Phoenix Case Key",
             "Gamma Case Key",
             "Gamma 2 Case Key",
-            "Glove Case Key",
-			"Spectrum Case Key"
+            "Glove Case Key"
         ] // These are all keys ^ //Mann Co. Supply Crate Key//
 }
 
