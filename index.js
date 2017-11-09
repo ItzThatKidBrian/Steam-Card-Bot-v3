@@ -26,7 +26,7 @@ let client = new SteamUser(),
 
 fs.readFile("./UserData/Users.json", (ERR, DATA) => {
     if (ERR) {
-        console.log("## An error occurred while getting Users: " + ERR);
+        console.log("[  DEBUG  ] An error occurred while getting UserData from Users.json : " + ERR);
     } else {
         users = JSON.parse(DATA);
     }
@@ -35,9 +35,9 @@ fs.readFile("./UserData/Users.json", (ERR, DATA) => {
 Utils.getCardsInSets((ERR, DATA) => {
     if (!ERR) {
         allCards = DATA;
-        console.log("Card data loaded. [" + Object.keys(DATA).length + "]");
+        console.log("[  DEBUG  ] Card data loaded. [" + Object.keys(DATA).length + "]");
     } else {
-        console.log("An error occurred while getting cards: " + ERR);
+        console.log("[  DEBUG  ] An error occurred while getting cards: " + ERR);
     }
 });
 
@@ -49,14 +49,14 @@ setInterval(() => {
             delete users[Object.keys(users)[i]];
             fs.writeFile("./UserData/Users.json", JSON.stringify(users), (ERR) => {
                 if (ERR) {
-                    console.log("## An error occurred while writing UserData file: " + ERR);
+                    console.log("[  DEBUG  ] An error occurred while writing UserData file: " + ERR);
                 }
             });
         } else {
             users[Object.keys(users)[i]].idleforhours += 1;
             fs.writeFile("./UserData/Users.json", JSON.stringify(users), (ERR) => {
                 if (ERR) {
-                    console.log("## An error occurred while writing UserData file: " + ERR);
+                    console.log("[  DEBUG  ] An error occurred while writing UserData file: " + ERR);
                 }
             });
         }
@@ -84,7 +84,7 @@ client.logOn({
 
 client.on("loggedOn", (details, parental) => {
     client.getPersonas([client.steamID], (personas) => {
-        console.log("## Logged in as #" + client.steamID + " (" + personas[client.steamID].player_name + ")");
+        console.log("[ ACCOUNT ] Name: " + client.steamID + " (" + personas[client.steamID].player_name + ")");
     });
     client.setPersona(1);
 });
@@ -92,22 +92,22 @@ client.on("loggedOn", (details, parental) => {
 client.on("webSession", (sessionID, cookies) => {
     manager.setCookies(cookies, (ERR) => {
         if (ERR) {
-            console.log("## An error occurred while setting cookies.");
+            console.log("[ ACCOUNT ] An error occurred while setting cookies.");
         } else {
-            console.log("## Websession created and cookies set.");
+            console.log("[ ACCOUNT ] Websession created and cookies set.");
         }
     });
     community.setCookies(cookies);
     community.startConfirmationChecker(10000, CONFIG.IDENTITYSECRET);
     Utils.getInventory(client.steamID.getSteamID64(), community, (ERR, DATA) => {
-        console.log("DEBUG#INVLOADED");
+        console.log("[  DEBUG  ] Inventory loaded");
         if (!ERR) {
             let s = DATA;
             Utils.getSets(s, allCards, (ERR, DATA) => {
-                console.log("DEBUG#SETSLOADED");
+                console.log("[  DEBUG  ] Sets loaded");
                 if (!ERR) {
                     botSets = DATA;
-                    console.log("## Bot's sets loaded.");
+                    console.log("[  DEBUG  ] Bot's sets loaded.");
                     let botNSets = 0;
                     for (let i = 0; i < Object.keys(botSets).length; i++) {
                         botNSets += botSets[Object.keys(botSets)[i]].length;
@@ -119,19 +119,56 @@ client.on("webSession", (sessionID, cookies) => {
                     }
                     client.gamesPlayed(playThis);
                 } else {
-                    console.log("## An error occurred while getting bot sets: " + ERR);
+                    console.log("[  DEBUG  ] An error occurred while getting bot sets: " + ERR);
                     process.exit();
                 }
             });
         } else {
-            console.log("## An error occurred while getting bot inventory: " + ERR);
+            console.log("[  DEBUG  ] An error occurred while getting bot inventory: " + ERR);
         }
     });
 });
 
 community.on("sessionExpired", (ERR) => {
-    console.log("## Session Expired. Relogging.");
+    console.log("[ ACCOUNT ] Session Expired. Relogging.");
     client.webLogOn();
+});
+
+// Console will show us how much new Items we have
+client.on('newItems', function (count) {
+  console.log("[ ACCOUNT ] We have " + count + " new Items in our Inventory");
+});
+
+// Console will show the registred email from the Bot account
+client.on('emailInfo', function (address, validated) {
+  console.log("[ ACCOUNT ] E-Mail: " + address + "");
+});
+
+// Console will show our current account limitations (ex. when we would be tradebanned, or could not access the market due to steam restrictions)
+client.on('accountLimitations', function (limited, communityBanned, locked, canInviteFriends) {
+  if(limited) {
+    console.log("[ ACCOUNT ] Account is limited. Cannot send friend invites, use the market, open group chat, or access the web API.");
+  }
+  if(communityBanned){
+    console.log("[ ACCOUNT ] Account is banned from Steam Community");
+  }
+  if(locked){
+    console.log("[ ACCOUNT ] Account is locked. We cannot trade/gift/purchase items, play on VAC servers, or access Steam Community.  Shutting down.");
+    process.exit(1);
+  }
+  if(!canInviteFriends){
+    console.log("[ ACCOUNT ] Account is unable to send friend requests.");
+  }
+});
+
+// Console will show the current Wallet Balance of the Steam Account
+client.on('wallet', function (hasWallet, currency, balance) {
+  if(hasWallet){
+    console.log("[ ACCOUNT ] Wallet: "+ SteamUser.formatCurrency(balance, currency) +" Steam Credit remaining");
+  } 
+  else{
+    console.log("[ ACCOUNT ] We do not have a Steam wallet.");
+  }
 });
 
 client.on("friendMessage", (SENDER, MSG) => {
@@ -143,13 +180,13 @@ client.on("friendMessage", (SENDER, MSG) => {
     }
     fs.writeFile("./ChatLogs/UserLogs/" + SENDER.getSteamID64() + "-log-" + new Date().getDate() + "-" + new Date().getMonth() + "-" + new Date().getFullYear() + ".json", JSON.stringify({ logs: userLogs[SENDER.getSteamID64()] }), (ERR) => {
         if (ERR) {
-            console.log("## An error occurred while writing UserLogs file: " + ERR);
+            console.log("[  DEBUG  ] An error occurred while writing UserLogs file: " + ERR);
         }
     });
     chatLogs += SENDER.getSteamID64() + " : " + MSG + "\n";
     fs.writeFile("./ChatLogs/FullLogs/log-" + new Date().getDate() + "-" + new Date().getMonth() + "-" + new Date().getFullYear() + ".txt", chatLogs, (ERR) => {
         if (ERR) {
-            console.log("## An error occurred while writing FullLogs file: " + ERR);
+            console.log("[  DEBUG  ] An error occurred while writing FullLogs file: " + ERR);
         }
     });
     if (Object.keys(users).indexOf(SENDER.getSteamID64()) < 0) {
@@ -157,7 +194,7 @@ client.on("friendMessage", (SENDER, MSG) => {
         users[SENDER.getSteamID64()].idleforhours = 0;
         fs.writeFile("./UserData/Users.json", JSON.stringify(users), (ERR) => {
             if (ERR) {
-                console.log("## An error occurred while writing UserData file: " + ERR);
+                console.log("[  DEBUG  ] An error occurred while writing UserLogs file: " + ERR);
             }
         });
     } else {
@@ -195,7 +232,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                             client.chatMessage(SENDER, "Levelup bot: Your level could not be retrieved. Make sure your Steam Profile is public and try again.");
                         }
                     } else {
-                        console.log("## An error occurred while getting badge data: " + ERR);
+                        console.log("[ Debug ] An error occurred while getting badge data: " + ERR);
                         client.chatMessage(SENDER, "An error occurred while loading your badges. Please try again later.");
                     }
                 });
@@ -266,7 +303,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                 client.chatMessage(SENDER, "There are currently sets from " + Object.keys(botSets).length + " different games, of which you have not crafted " + hisMaxSets + ". This would cost " + parseInt(hisMaxSets / CONFIG.CARDS.BUY1KEYFORAMOUNTOFSETS * 100) / 100 + " keys.");
             } else {
                 client.chatMessage(SENDER, "An error occurred while getting your badges. Please try again.");
-                console.log("An error occurred while getting badges: " + ERR);
+                console.log("[  DEBUG  ] An error occurred while getting badges: " + ERR);
             }
         });
     } 
@@ -368,7 +405,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                         client.chatMessage(SENDER, "There are currently " + hisMaxSets + "/" + botNSets + " sets available which you have not fully crafted yet. Buying all of them will cost you " + parseInt(hisMaxSets / CONFIG.CARDS.BUY1KEYFORAMOUNTOFSETS * 100) / 100 + " keys.");
                     } else {
                         client.chatMessage(SENDER, "An error occurred while getting your badges. Please try again.");
-                        console.log("An error occurred while getting badges: " + ERR);
+                        console.log("[  DEBUG  ] An error occurred while getting badges: " + ERR);
                     }
                 });
             } else {
@@ -499,7 +536,8 @@ client.on("friendMessage", (SENDER, MSG) => {
 		else {
             client.chatMessage(SENDER, "Please try again later.");
         }
-    } else if (MSG.toUpperCase().indexOf("!BUYONE") >= 0) {
+    } 
+else if (MSG.toUpperCase().indexOf("!BUYONE") >= 0) {
         if (botSets) {
             let n = MSG.toUpperCase().replace("!BUYONE ", ""),
                 amountofsets = parseInt(n) * CONFIG.CARDS.BUY1KEYFORAMOUNTOFSETS;
@@ -508,7 +546,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                     let t = manager.createOffer(SENDER.getSteamID64());
                     t.getUserDetails((ERR, ME, THEM) => {
                         if (ERR) {
-                            console.log("## An error occurred while getting trade holds: " + ERR);
+                            console.log("[ UserChat ] An error occurred while getting trade holds: " + ERR);
                             client.chatMessage(SENDER, "An error occurred while getting your trade holds. Please try again");
                         } else if (ME.escrowDays == 0 && THEM.escrowDays == 0) {
                             n = parseInt(n);
@@ -516,7 +554,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                             client.chatMessage(SENDER, "Processing your request.");
                             manager.getUserInventoryContents(SENDER.getSteamID64(), CONFIG.KEYSFROMGAME, 2, true, (ERR, INV, CURR) => {
                                 if (ERR) {
-                                    console.log("## An error occurred while getting inventory: " + ERR);
+                                    console.log("[ UserChat ] An error occurred while getting inventory: " + ERR);
                                     client.chatMessage(SENDER, "An error occurred while loading your inventory. Please try later");
                                 } else {
                                     console.log("DEBUG#INV LOADED");
@@ -532,7 +570,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                                         } else {
                                             Utils.getBadges(SENDER.getSteamID64(), (ERR, DATA) => {
                                                 if (!ERR) {
-                                                    console.log("DEBUG#BADGE LOADED");
+                                                    console.log("[ Debug ] Badge loaded without error");
                                                     if (!ERR) {
                                                         let b = {}; // List with badges that CAN still be crafted
                                                         if (DATA) {
@@ -558,7 +596,7 @@ client.on("friendMessage", (SENDER, MSG) => {
                                                                 hisMaxSets += 5 - b[Object.keys(b)[i]].length;
                                                             }
                                                         }
-                                                        console.log("DEBUG#LOOP 1 DONE");
+                                                        console.log("[  !BUY  ] DEBUG - LOOP 1");
                                                         // Loop for sets he has never crafted
                                                         for (let i = 0; i < Object.keys(botSets).length; i++) {
                                                             if (Object.keys(b).indexOf(Object.keys(botSets)[i]) < 0) {
@@ -576,22 +614,22 @@ client.on("friendMessage", (SENDER, MSG) => {
                             playThis[0] = parseString(playThis[0], totalBotSets);
                         }
                         client.gamesPlayed(playThis);
-                                                        console.log("DEBUG#LOOP 2 DONE");
+                                                        console.log("[ Debug ] Loop 2");
                                                         // HERE
                                                         if (amountofsets <= hisMaxSets) {
                                                             hisMaxSets = amountofsets;
-                                                            console.log("DEBUG#TRADE CREATED");
+                                                            console.log("[ Debug ] Trade Created");
                                                             sortSetsByAmount(botSets, (DATA) => {
-                                                                console.log("DEBUG#" + DATA);
-                                                                console.log("DEBUG#SETS SORTED");
+                                                                console.log("[ Debug ] " + DATA);
+                                                                console.log("[ Debug ] Sets has been sorted");
                                                                 firstLoop: for (let i = 0; i < DATA.length; i++) {
                                                                     if (b[DATA[i]] == 0) {
                                                                         continue firstLoop;
                                                                     } else {
-                                                                        console.log("DEBUG#" + i);
-                                                                        console.log("DEBUG#FOR LOOP ITEMS");
+                                                                        console.log("[ Debug ] DEBUG - " + i);
+                                                                        console.log("[ Debug ] For Itemloop");
                                                                         if (hisMaxSets > 0) {
-                                                                            console.log("DEBUG#MAXSETSMORETHAN1");
+                                                                            console.log("[  !BUY  ] DEBUG - Max Sets more than 1");
                                                                             if (!b[DATA[i]] && botSets[DATA[i]].length > 0) { // TODO NOT FOR LOOP WITH BOTSETS. IT SENDS ALL
                                                                                 // BOT HAS ENOUGH SETS AND USER NEVER CRAFTED THIS
                                                                                 bLoop: for (let j = 0; j < botSets[DATA[i]].length; j++) {
