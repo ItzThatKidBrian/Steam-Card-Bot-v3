@@ -1002,7 +1002,7 @@ else if (MSG.toUpperCase().indexOf("!BUYONE") >= 0) {
             client.chatMessage(SENDER, "Please try again later.");
         }
     } else if (MSG.toUpperCase() == "!PROOF") {
-        client.chatMessage(SENDER, "b0gotac @ github");
+        client.chatMessage(SENDER, "Updated and fixed by GGrandma @ github");
     } else if (CONFIG.ADMINS.indexOf(SENDER.getSteamID64()) >= 0 || CONFIG.ADMINS.indexOf(parseInt(SENDER.getSteamID64())) >= 0) {
         // Admin commands.
         if (MSG.toUpperCase().indexOf("!BLOCK") >= 0) {
